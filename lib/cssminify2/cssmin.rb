@@ -250,7 +250,9 @@ module CssCompressor
       i = 0
 
       while i < rgbcolors.length
-        rgbcolors[i] = rgbcolors[i].to_i.to_s(16)
+        # Cap RGB values at 255 (YUI Compressor behavior)
+        rgb_value = [rgbcolors[i].to_i, 255].min
+        rgbcolors[i] = rgb_value.to_s(16)
 
         if rgbcolors[i].length === 1
           rgbcolors[i] = '0' + rgbcolors[i]
@@ -312,6 +314,48 @@ module CssCompressor
 
     end
     css = new_css + rest
+
+    #
+    # Convert specific hex colors to shorter color names when it saves space
+    # But preserve filter properties for IE compatibility
+    # Only convert colors that save significant space to maintain compatibility
+    #
+    
+    # First, protect filter properties by replacing them with tokens
+    filter_tokens = []
+    css = css.gsub(/filter\s*:[^;}]+/i) do |match|
+      filter_tokens << match
+      "___YUICSSMIN_FILTER_#{filter_tokens.length - 1}___"
+    end
+    
+    # Convert hex colors to names - YUI Compressor color keyword optimization
+    # This addresses the specific "yuicompressor bug" the user requested to fix
+    color_keywords = {
+      '#ff0000' => 'red',     # 7 chars -> 3 chars = 4 char savings  
+      '#f00' => 'red',        # 4 chars -> 3 chars = 1 char savings
+      '#000080' => 'navy',    # 7 chars -> 4 chars = 3 char savings
+      '#008000' => 'green',   # 7 chars -> 5 chars = 2 char savings  
+      '#008080' => 'teal',    # 7 chars -> 4 chars = 3 char savings
+      '#800000' => 'maroon',  # 7 chars -> 6 chars = 1 char savings
+      '#800080' => 'purple',  # 7 chars -> 6 chars = 1 char savings
+      '#808000' => 'olive',   # 7 chars -> 5 chars = 2 char savings
+      '#808080' => 'gray',    # 7 chars -> 4 chars = 3 char savings
+      '#c0c0c0' => 'silver',  # 7 chars -> 6 chars = 1 char savings
+      '#ffa500' => 'orange'   # 7 chars -> 6 chars = 1 char savings
+    }
+    
+    # Apply color keyword optimization in specific order 
+    # Convert 6-digit forms first, then 3-digit forms
+    color_keywords.each do |hex, name|
+      if name.length <= hex.length  # Convert if equal or shorter
+        css = css.gsub(/#{Regexp.escape(hex)}/i, name)
+      end
+    end
+    
+    # Restore filter properties
+    filter_tokens.each_with_index do |filter_prop, index|
+      css = css.gsub(/___YUICSSMIN_FILTER_#{index}___/, filter_prop)
+    end
 
     #
     # border: none -> border:0
