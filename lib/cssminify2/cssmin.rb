@@ -137,9 +137,15 @@ module CssCompressor
     css = css.gsub(/\s+/, ' ')
 
     #
-    # Preserve spaces in calc() functions - calc() requires spaces around operators
+    # Preserve calc() functions completely - calc() requires spaces around operators
     #
-    css = css.gsub(/calc\([^)]*\)/) { |m| m.gsub(/\s*([+\-*\/])\s*/, '___YUICSSMIN_CALC_SPACE___\1___YUICSSMIN_CALC_SPACE___') }
+    calc_placeholders = []
+    css = css.gsub(/calc\([^)]*\)/) do |match|
+      # Ensure operators have proper spacing
+      normalized = match.gsub(/\s*([+\-*\/])\s*/, ' \1 ')
+      calc_placeholders << normalized
+      "___YUICSSMIN_CALC_FUNCTION_#{calc_placeholders.length - 1}___"
+    end
 
     #
     # Remove the spaces before the things that should not have spaces before them.
@@ -148,8 +154,9 @@ module CssCompressor
     # Swap out any pseudo-class colons with the token, and then swap back.
     #
     css = css.gsub(/(^|\})(([^\{:])+:)+([^\{]*\{)/) { |m| m.gsub(/:/, '___YUICSSMIN_PSEUDOCLASSCOLON___') }
-    css = css.gsub(/(:[\w-]+)\s+(:[\w-]+)/) { |m| m.gsub(/\s+/, '___YUICSSMIN_PRESERVE_SPACE___') }
-    css = css.gsub(/(?<!___YUICSSMIN_CALC_SPACE___)\s+([!{};:>+\)\],])/) { $1.to_s }
+    # Match sequences of pseudo-classes with spaces between them
+    css = css.gsub(/(:[\w-]+(?:\([^)]*\))?(?:\s+:[\w-]+(?:\([^)]*\))?)+)/) { |m| m.gsub(/\s+/, '___YUICSSMIN_PRESERVE_SPACE___') }
+    css = css.gsub(/\s+([!{};:>+\)\],])/) { $1.to_s }
     css = css.gsub(/([^\+\-\/\*])\s+\(/) { $1.concat('(') }
     css = css.gsub(/___YUICSSMIN_PSEUDOCLASSCOLON___/, ':')
     css = css.gsub(/___YUICSSMIN_PRESERVE_SPACE___/, ' ')
@@ -162,14 +169,10 @@ module CssCompressor
 
     #
     # Remove the spaces after the things that should not have spaces after them.
-    # But preserve calc() spaces by not matching our calc tokens
     #
-    css = css.gsub(/([!{}:;>+\(\[,])(?!___YUICSSMIN_CALC_SPACE___)\s+/) { $1.to_s }
+    css = css.gsub(/([!{}:;>+\(\[,])\s+/) { $1.to_s }
 
-    #
-    # Restore calc() spaces
-    #
-    css = css.gsub(/___YUICSSMIN_CALC_SPACE___/, ' ')
+    # (calc functions will be restored later)
 
     #
     # Retain space for special IE6 cases
@@ -195,9 +198,8 @@ module CssCompressor
 
     #
     # Remove the spaces after the things that should not have spaces after them.
-    # But preserve calc() spaces by not matching our calc tokens
     #
-    css = css.gsub(/([!{}:;>+\(\[,])(?!___YUICSSMIN_CALC_SPACE___)\s+/) { $1.to_s }
+    css = css.gsub(/([!{}:;>+\(\[,])\s+/) { $1.to_s }
 
     #
     # Remove unnecessary semicolons
@@ -224,8 +226,8 @@ module CssCompressor
     # Replace 0 0 0 0; with 0
     # But preserve flex shorthand which requires multiple values
     #
-    css = css.gsub(/:0 0 0 0(;|\})/) { ':0' + $1.to_s }
-    css = css.gsub(/:0 0 0(;|\})/) { ':0' + $1.to_s }
+    css = css.gsub(/(?<!flex):0 0 0 0(;|\})/) { ':0' + $1.to_s }
+    css = css.gsub(/(?<!flex):0 0 0(;|\})/) { ':0' + $1.to_s }
     css = css.gsub(/(?<!flex):0 0(;|\})/) { ':0' + $1.to_s }
 
     #
@@ -348,6 +350,13 @@ module CssCompressor
     # Replace multiple semi-colons in a row by a single one
     #
     css = css.gsub(/;;+/, ';')
+
+    #
+    # Restore calc() functions with proper spacing (after all space removal)
+    #
+    calc_placeholders.each_with_index do |calc_func, index|
+      css = css.gsub(/___YUICSSMIN_CALC_FUNCTION_#{index}___/, calc_func)
+    end
 
     #
     # Restore preserved comments and strings
