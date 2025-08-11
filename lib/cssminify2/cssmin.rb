@@ -137,14 +137,39 @@ module CssCompressor
     css = css.gsub(/\s+/, ' ')
 
     #
+    # Preserve spaces in calc() functions - calc() requires spaces around operators
+    #
+    css = css.gsub(/calc\([^)]*\)/) { |m| m.gsub(/\s*([+\-*\/])\s*/, '___YUICSSMIN_CALC_SPACE___\1___YUICSSMIN_CALC_SPACE___') }
+
+    #
     # Remove the spaces before the things that should not have spaces before them.
     # But, be careful not to turn "p :link {...}" into "p:link{...}"
+    # Also preserve spaces between pseudo-classes like ":first-child :last-child"
     # Swap out any pseudo-class colons with the token, and then swap back.
     #
     css = css.gsub(/(^|\})(([^\{:])+:)+([^\{]*\{)/) { |m| m.gsub(/:/, '___YUICSSMIN_PSEUDOCLASSCOLON___') }
-    css = css.gsub(/\s+([!{};:>+\)\],])/) { $1.to_s }
+    css = css.gsub(/(:[\w-]+)\s+(:[\w-]+)/) { |m| m.gsub(/\s+/, '___YUICSSMIN_PRESERVE_SPACE___') }
+    css = css.gsub(/(?<!___YUICSSMIN_CALC_SPACE___)\s+([!{};:>+\)\],])/) { $1.to_s }
     css = css.gsub(/([^\+\-\/\*])\s+\(/) { $1.concat('(') }
     css = css.gsub(/___YUICSSMIN_PSEUDOCLASSCOLON___/, ':')
+    css = css.gsub(/___YUICSSMIN_PRESERVE_SPACE___/, ' ')
+
+    #
+    # Put the space back in some cases, to support stuff like
+    # @media screen and (-webkit-min-device-pixel-ratio:0){
+    #
+    css = css.gsub(/\band\(/i, 'and (')
+
+    #
+    # Remove the spaces after the things that should not have spaces after them.
+    # But preserve calc() spaces by not matching our calc tokens
+    #
+    css = css.gsub(/([!{}:;>+\(\[,])(?!___YUICSSMIN_CALC_SPACE___)\s+/) { $1.to_s }
+
+    #
+    # Restore calc() spaces
+    #
+    css = css.gsub(/___YUICSSMIN_CALC_SPACE___/, ' ')
 
     #
     # Retain space for special IE6 cases
@@ -170,8 +195,9 @@ module CssCompressor
 
     #
     # Remove the spaces after the things that should not have spaces after them.
+    # But preserve calc() spaces by not matching our calc tokens
     #
-    css = css.gsub(/([!{}:;>+\(\[,])\s+/) { $1.to_s }
+    css = css.gsub(/([!{}:;>+\(\[,])(?!___YUICSSMIN_CALC_SPACE___)\s+/) { $1.to_s }
 
     #
     # Remove unnecessary semicolons
@@ -196,10 +222,11 @@ module CssCompressor
     css = css.gsub(/([0-9])\.0(px|em|%|in|cm|mm|pc|pt|ex|deg|g?rad|m?s|k?hz| |;)/i) {"#{$1.to_s}#{$2.to_s}"}
 
     # Replace 0 0 0 0; with 0
+    # But preserve flex shorthand which requires multiple values
     #
     css = css.gsub(/:0 0 0 0(;|\})/) { ':0' + $1.to_s }
     css = css.gsub(/:0 0 0(;|\})/) { ':0' + $1.to_s }
-    css = css.gsub(/:0 0(;|\})/) { ':0' + $1.to_s }
+    css = css.gsub(/(?<!flex):0 0(;|\})/) { ':0' + $1.to_s }
 
     #
     # Replace background-position:0; with background-position:0 0;

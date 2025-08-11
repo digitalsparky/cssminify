@@ -10,10 +10,10 @@ describe "CSSminify2" do
     it "minifies CSS" do
       source = File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read
       minified = CSSminify2.compress(source)
-      minified.length.should < source.length
-      lambda {
+      expect(minified.length).to be < source.length
+      expect {
         CSSminify2.compress(minified)
-      }.should_not raise_error
+      }.to_not raise_error
     end
 
     it "honors the specified maximum line length" do
@@ -30,27 +30,31 @@ describe "CSSminify2" do
         }
       EOS
       minified = CSSminify2.compress(source, 30)
-      minified.split("\n").length.should eq(2)
-      minified.should eq(".classname1{border:0;background:0;outline:0}\n.classname2{border:0;background:0;outline:0}")
+      expect(minified.split("\n").length).to eq(2)
+      expect(minified).to eq(".classname1{border:0;background:0;outline:0}\n.classname2{border:0;background:0;outline:0}")
     end
 
     it "handles strings as input format" do
-      lambda {
-        CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read).should_not be_empty
-      }.should_not raise_error
+      expect {
+        CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read)
+      }.to_not raise_error
+      expect(CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read)).to_not be_empty
     end
 
     it "handles files as input format" do
-      lambda {
-        CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8")).should_not be_empty
-      }.should_not raise_error
+      expect {
+        CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8"))
+      }.to_not raise_error
+      expect(CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8"))).to_not be_empty
     end
 
     it "works as both class and class instance" do
-      lambda {
-        CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read).should_not be_empty
-        CSSminify2.new.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read).should_not be_empty
-      }.should_not raise_error
+      expect {
+        result1 = CSSminify2.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read)
+        result2 = CSSminify2.new.compress(File.open(File.expand_path("../sample.css", __FILE__), "r:UTF-8").read)
+        expect(result1).to_not be_empty
+        expect(result2).to_not be_empty
+      }.to_not raise_error
     end
 
   end
@@ -69,7 +73,7 @@ describe "CSSminify2" do
             font-weight: normal;
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{font-weight:normal}')
+      expect(CSSminify2.compress(source)).to eq('.classname{font-weight:normal}')
     end
 
     it "preserves special comments" do
@@ -87,7 +91,7 @@ describe "CSSminify2" do
           (c) Very Important Comment
         */.classname{font-weight:normal}
       EOS
-      (CSSminify2.compress(source) + "\n").should eq(result)
+      expect(CSSminify2.compress(source) + "\n").to eq(result)
     end
 
     it "removes last semi-colon in a block" do
@@ -97,7 +101,7 @@ describe "CSSminify2" do
             border-bottom: 2px;
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{border-top:1px;border-bottom:2px}')
+      expect(CSSminify2.compress(source)).to eq('.classname{border-top:1px;border-bottom:2px}')
     end
 
     it "removes extra semi-colons" do
@@ -107,7 +111,7 @@ describe "CSSminify2" do
             border-bottom: 2px;;;
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{border-top:1px;border-bottom:2px}')
+      expect(CSSminify2.compress(source)).to eq('.classname{border-top:1px;border-bottom:2px}')
     end
 
     it "removes empty declarations" do
@@ -115,7 +119,7 @@ describe "CSSminify2" do
         .empty { ;}
         .nonempty {border: 0;}
       EOS
-      CSSminify2.compress(source).should eq('.nonempty{border:0}')
+      expect(CSSminify2.compress(source)).to eq('.nonempty{border:0}')
     end
 
     it "simplifies zero values" do
@@ -126,7 +130,7 @@ describe "CSSminify2" do
             padding: 0in 0cm 0mm 0pc
         }
       EOS
-      CSSminify2.compress(source).should eq('a{margin:0;background-position:0 0;padding:0}')
+      expect(CSSminify2.compress(source)).to eq('a{margin:0;background-position:0 0;padding:0}')
     end
 
     it "simplifies zero values preserving unit when necessary" do
@@ -172,7 +176,7 @@ describe "CSSminify2" do
           }
         }
       EOS
-      CSSminify2.compress(source).should eq('@-webkit-keyframes anim{0%{left:0}100%{left:-100%}}@-moz-keyframes anim{0%{left:0}100%{left:-100%}}@-ms-keyframes anim{0%{left:0}100%{left:-100%}}@-o-keyframes anim{0%{left:0}100%{left:-100%}}@keyframes anim{0%{left:0}100%{left:-100%}}')
+      expect(CSSminify2.compress(source)).to eq('@-webkit-keyframes anim{0%{left:0}100%{left:-100%}}@-moz-keyframes anim{0%{left:0}100%{left:-100%}}@-ms-keyframes anim{0%{left:0}100%{left:-100%}}@-o-keyframes anim{0%{left:0}100%{left:-100%}}@keyframes anim{0%{left:0}100%{left:-100%}}')
     end
 
     it "removes leading zeros from floats" do
@@ -181,7 +185,7 @@ describe "CSSminify2" do
             margin: 0.6px 0.333pt 1.2em 8.8cm;
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{margin:.6px .333pt 1.2em 8.8cm}')
+      expect(CSSminify2.compress(source)).to eq('.classname{margin:.6px .333pt 1.2em 8.8cm}')
     end
 
     it "removes leading zeros from groups" do
@@ -199,7 +203,7 @@ describe "CSSminify2" do
         0hz /* intentionally on next line */;
         }
       EOS
-      CSSminify2.compress(source).should eq('a{margin:0;_padding-top:0;background-position:0 0;padding:0;transition:opacity 0;transition-delay:0;transform:rotate3d(0,0,0);pitch:0;pitch:0}')
+      expect(CSSminify2.compress(source)).to eq('a{margin:0;_padding-top:0;background-position:0 0;padding:0;transition:opacity 0;transition-delay:0;transform:rotate3d(0,0,0);pitch:0;pitch:0}')
     end
 
     it "simplifies color values but preserves filter properties, RGBa values and ID strings" do
@@ -210,7 +214,7 @@ describe "CSSminify2" do
             background: none repeat scroll 0 0 rgb(255, 0,0);
         }
       EOS
-      CSSminify2.compress(source).should eq('.color-me{color:#7b7b7b;border-color:#fed;background:none repeat scroll 0 0 #f00}')
+      expect(CSSminify2.compress(source)).to eq('.color-me{color:#7b7b7b;border-color:#fed;background:none repeat scroll 0 0 #f00}')
 
       source = <<-EOS
         #AABBCC {
@@ -218,7 +222,7 @@ describe "CSSminify2" do
             filter: chroma(color="#FFFFFF");
         }
       EOS
-      CSSminify2.compress(source).should eq('#AABBCC{color:rgba(1,2,3,4);filter:chroma(color="#FFFFFF")}')
+      expect(CSSminify2.compress(source)).to eq('#AABBCC{color:rgba(1,2,3,4);filter:chroma(color="#FFFFFF")}')
     end
 
     it "only keeps the first charset declaration" do
@@ -234,7 +238,7 @@ describe "CSSminify2" do
             border-width: 10px;
         }
       EOS
-      CSSminify2.compress(source).should eq('@charset "utf-8";#foo{border-width:1px}#bar{border-width:10px}')
+      expect(CSSminify2.compress(source)).to eq('@charset "utf-8";#foo{border-width:1px}#bar{border-width:10px}')
     end
 
     it "simplifies the IE opacity filter syntax" do
@@ -244,7 +248,7 @@ describe "CSSminify2" do
             filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=80);       /* IE < 8 */
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{-ms-filter:"alpha(opacity=80)";filter:alpha(opacity=80)}')
+      expect(CSSminify2.compress(source)).to eq('.classname{-ms-filter:"alpha(opacity=80)";filter:alpha(opacity=80)}')
     end
 
     it "replaces 'none' values with 0 where allowed" do
@@ -255,7 +259,7 @@ describe "CSSminify2" do
             outline: none;
         }
       EOS
-      CSSminify2.compress(source).should eq('.classname{border:0;background:0;outline:0}')
+      expect(CSSminify2.compress(source)).to eq('.classname{border:0;background:0;outline:0}')
     end
 
     it "tolerates underscore/star hacks" do
@@ -266,7 +270,7 @@ describe "CSSminify2" do
             _width: 3px;
         }
       EOS
-      CSSminify2.compress(source).should eq('#element{width:1px;*width:2px;_width:3px}')
+      expect(CSSminify2.compress(source)).to eq('#element{width:1px;*width:2px;_width:3px}')
     end
 
     it "tolerates child selector hacks" do
@@ -275,7 +279,7 @@ describe "CSSminify2" do
             color: blue;
         }
       EOS
-      CSSminify2.compress(source).should eq('html>/**/body p{color:blue}')
+      expect(CSSminify2.compress(source)).to eq('html>/**/body p{color:blue}')
     end
 
     it "tolerates IE5/Mac hacks" do
@@ -286,7 +290,7 @@ describe "CSSminify2" do
         }
         /* Stop ignoring in IE mac */
       EOS
-      CSSminify2.compress(source).should eq('/*\*/.selector{color:khaki}/**/')
+      expect(CSSminify2.compress(source)).to eq('/*\*/.selector{color:khaki}/**/')
     end
 
     it "tolerates box model hacks" do
@@ -301,7 +305,7 @@ describe "CSSminify2" do
             width: 200px; /* others */
         }
       EOS
-      CSSminify2.compress(source).should eq('#elem{width:100px;voice-family:"\"}\"";voice-family:inherit;width:200px}html>body #elem{width:200px}')
+      expect(CSSminify2.compress(source)).to eq('#elem{width:100px;voice-family:"\"}\"";voice-family:inherit;width:200px}html>body #elem{width:200px}')
     end
 
     it "keeps a space before opening brace in calc" do
@@ -312,7 +316,7 @@ describe "CSSminify2" do
           background-image: url("./bg.png");
         }
       EOS
-      CSSminify2.compress(source).should eq('.content{height:calc(35% - 30px);width:calc(35% - (30px / 2));background-image:url("./bg.png")}')
+      expect(CSSminify2.compress(source)).to eq('.content{height:calc(35% - 30px);width:calc(35% - (30px / 2));background-image:url("./bg.png")}')
     end
 
     it "should pass all the original tests included in the YUI compressor package" do
@@ -322,7 +326,7 @@ describe "CSSminify2" do
 
       for file in files do
         print "  -- testing #{file} ..."
-        CSSminify2.compress(File.read(file)).chomp.strip.should eq(File.read(file + '.min').chomp.strip)
+        expect(CSSminify2.compress(File.read(file)).chomp.strip).to eq(File.read(file + '.min').chomp.strip)
         print "successful\n"
       end
     end
