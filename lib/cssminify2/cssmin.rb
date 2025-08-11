@@ -306,12 +306,13 @@ module CssCompressor
     #
     if linebreakpos
       startIndex = 0
-      i = 0
+      i = linebreakpos
       while i < css.length
         i = i + 1
         if css[i - 1] === '}' && i - startIndex > linebreakpos
           css = css.slice(0, i) + "\n" + css.slice(i, css.length - i)
           startIndex = i
+          i = startIndex + linebreakpos
         end
       end
     end
