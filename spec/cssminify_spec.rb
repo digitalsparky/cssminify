@@ -214,7 +214,7 @@ describe "CSSminify2" do
             background: none repeat scroll 0 0 rgb(255, 0,0);
         }
       EOS
-      expect(CSSminify2.compress(source)).to eq('.color-me{color:#7b7b7b;border-color:#fed;background:none repeat scroll 0 0 #f00}')
+      expect(CSSminify2.compress(source)).to eq('.color-me{color:#7b7b7b;border-color:#fed;background:none repeat scroll 0 0 red}')
 
       source = <<-EOS
         #AABBCC {
